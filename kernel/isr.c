@@ -1,7 +1,7 @@
 #include "isr.h"
 #include "log.h"
 #include "io.h"
-#include "vga.h"
+#include "panic.h"
 
 static isr_t handlers[256] = {0};
 
@@ -84,7 +84,7 @@ void isr_handler(regs_t* r) {
         return;
     }
 
-    vga_setcolor(15, 4);
+    // vga_setcolor(15, 4);
     klog("EXCEPTION ");
     klog_dec(r->int_no);
     klog(": ");
@@ -95,21 +95,14 @@ void isr_handler(regs_t* r) {
         uint32_t cr2;
         __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
 
-        klog(" cr2=");
+        klog("PF cr2=");
         klog_hex32(cr2);
         klog(" err=");
         klog_hex32(r->err_code);
-
-        pf_print_flags(r->err_code);
-        pf_print_human(r->err_code);
-
         klogln("");
     }
-    klogln("");
 
-    dump_regs(r);
-
-    for (;;) __asm__ volatile("hlt");
+    PANIC_REGS("Page Fault", r);
 }
 
 void irq_handler(regs_t* r) {

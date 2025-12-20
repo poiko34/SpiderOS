@@ -23,7 +23,8 @@ OBJ := \
   kernel/isr_stubs.o \
   kernel/gdt_flush.o \
   kernel/tty.o \
-  kernel/log.o
+  kernel/log.o \
+  kernel/panic.o
 
 all: os.iso
 

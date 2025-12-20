@@ -3,6 +3,7 @@
 #include "kbd.h"
 #include "io.h"
 #include "tty.h"
+#include "log.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -137,6 +138,40 @@ void shell_input(char c)
             g_line[g_cur++] = c;
             g_len++;
             redraw(g_line, g_len, g_cur, g_start);
+        }
+        return;
+    }
+
+    // Ctrl+C
+    if (c == 3) {   // ^C
+        shell_reset_line();
+        klogln("^C");
+        g_ready = 1;
+        return;
+    }
+
+    // Ctrl+L
+    if (c == 12) {  // ^L
+        tty_t* t = tty_active();
+        tty_clear(t);
+        tty_prints(PROMPT);
+        redraw(g_line, g_len, g_cur, g_start);
+        return;
+    }
+
+    // Ctrl+U
+    if (c == 21) {  // ^U
+        g_len = g_cur = 0;
+        g_line[0] = 0;
+        redraw(g_line, 0, 0, g_start);
+        return;
+    }
+
+    // Ctrl+D
+    if (c == 4) {   // ^D
+        if (g_len == 0) {
+            g_line[0] = 0;
+            g_ready = 1;
         }
         return;
     }

@@ -10,6 +10,7 @@
 #include "pmm.h"
 #include "heap.h"
 #include "tty.h"
+#include "panic.h"
 
 #define MULTIBOOT_MAGIC 0x2BADB002
 
@@ -99,6 +100,7 @@ void kmain(uint32_t magic, uint32_t mb_info) {
     timer_install();
     pit_init(100);
     kbd_install();
+
     __asm__ volatile ("sti");
 
     shell_run();

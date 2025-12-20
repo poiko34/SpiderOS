@@ -1,21 +1,30 @@
 #include "timer.h"
+#include "isr.h"
 #include "io.h"
 
-#define PIT_FREQ 1193182
-
-volatile uint32_t timer_ticks = 0;
+static volatile uint32_t ticks = 0;
 volatile uint32_t blink_phase = 0;
 
-void pit_init(uint32_t hz) {
-    uint32_t div = PIT_FREQ / hz;
-    outb(0x43, 0x36);
-    outb(0x40, div & 0xFF);
-    outb(0x40, (div >> 8) & 0xFF);
+static void timer_cb(regs_t* r)
+{
+    (void)r;
+    ticks++;
 }
 
-void timer_tick(void) {
-    timer_ticks++;
-    if ((timer_ticks % 50) == 0) {   // ~2 раза/сек при 100 Hz
-        blink_phase ^= 1;
-    }
+void pit_init(uint32_t freq)
+{
+    uint32_t divisor = 1193180 / freq;
+    outb(0x43, 0x36);
+    outb(0x40, divisor & 0xFF);
+    outb(0x40, (divisor >> 8) & 0xFF);
+}
+
+void timer_install(void)
+{
+    register_interrupt_handler(32, timer_cb);
+}
+
+uint32_t timer_get_ticks(void)
+{
+    return ticks;
 }

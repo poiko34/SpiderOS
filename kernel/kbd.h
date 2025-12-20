@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 #define KEY_LEFT   0x100
 #define KEY_RIGHT  0x101
@@ -7,3 +8,5 @@
 
 int kbd_getkey(void);
 int kbd_getkey_nb(void);
+void kbd_install(void);
+void kbd_handle_scancode(uint8_t sc);

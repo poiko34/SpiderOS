@@ -72,8 +72,9 @@ void kmain(uint32_t magic, uint32_t mb_info) {
     vga_println("Type 'help'.");
 
     idt_init();
+    timer_install();
     pit_init(100);
-
+    kbd_install();
     __asm__ volatile ("sti");
 
     shell_run();

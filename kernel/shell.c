@@ -92,8 +92,6 @@ static void read_line(char* buf, int max) {
     }
 }
 
-extern volatile uint32_t blink_phase;
-
 void shell_run(void) {
     char line[128];
     uint32_t last_phase = blink_phase;
@@ -121,4 +119,10 @@ void shell_run(void) {
             vga_println(line);
         }
     }
+}
+
+void shell_input(char c)
+{
+    // ВРЕМЕННО: просто печать, чтобы проверить IRQ-клавиатуру
+    if (c) vga_putc(c);
 }

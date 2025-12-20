@@ -20,6 +20,7 @@ OBJ := \
   kernel/memory.o \
   kernel/pmm.o \
   kernel/heap.o \
+  kernel/isr_stubs.o \
   kernel/gdt_flush.o
 
 all: os.iso

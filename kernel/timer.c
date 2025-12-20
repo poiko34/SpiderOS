@@ -9,6 +9,11 @@ static void timer_cb(regs_t* r)
 {
     (void)r;
     ticks++;
+
+    // мигание ~2 раза в секунду (если PIT = 100 Hz)
+    if ((ticks % 50) == 0) {
+        blink_phase++;
+    }
 }
 
 void pit_init(uint32_t freq)

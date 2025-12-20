@@ -13,9 +13,6 @@ typedef struct regs {
 
 typedef void (*isr_t)(regs_t*);
 
-void isr_install(void); // ставит IDT entries (обычно это у тебя в idt.c)
 void register_interrupt_handler(uint8_t n, isr_t handler);
-
-// вызываться из ASM
 void isr_handler(regs_t* r);
 void irq_handler(regs_t* r);

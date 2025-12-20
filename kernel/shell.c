@@ -1,8 +1,8 @@
 #include "shell.h"
 #include "timer.h"
-#include "vga.h"
 #include "kbd.h"
 #include "io.h"
+#include "tty.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -11,10 +11,10 @@
 #define HIST_MAX   16
 #define LINE_MAX   128
 
-static char  g_line[128];
-static int   g_len = 0;
-static int   g_cur = 0;
-static int   g_ready = 0;
+static char   g_line[LINE_MAX];
+static int    g_len = 0;
+static int    g_cur = 0;
+static int    g_ready = 0;
 static size_t g_start = PROMPT_LEN;
 
 static char history[HIST_MAX][LINE_MAX];
@@ -24,13 +24,24 @@ static int  hist_pos   = -1;
 static void redraw(const char* buf, int len, int cur, size_t start);
 
 static int streq(const char* a, const char* b) {
-  while (*a && *b) {
-    if (*a != *b) return 0;
-    a++; b++;
-  }
-  return *a == 0 && *b == 0;
+    while (*a && *b) {
+        if (*a != *b) return 0;
+        a++; b++;
+    }
+    return *a == 0 && *b == 0;
 }
 
+/* ---------- tiny tty print helpers ---------- */
+static void tty_prints(const char* s) {
+    tty_t* t = tty_active();
+    while (*s) tty_putc(t, *s++);
+}
+static void tty_println(const char* s) {
+    tty_prints(s);
+    tty_putc(tty_active(), '\n');
+}
+
+/* ---------- history ---------- */
 static void history_add(const char* line)
 {
     if (!line[0]) return;
@@ -62,42 +73,42 @@ static void history_load(int index)
     redraw(g_line, g_len, g_cur, g_start);
 }
 
-static void redraw(const char* buf, int len, int cur, size_t start) {
+/* ---------- redraw line editor ---------- */
+static void redraw(const char* buf, int len, int cur, size_t start)
+{
+    tty_t* t = tty_active();
     size_t row;
-    vga_get_cursor(&row, NULL);
+    tty_get_cursor(t, &row, NULL);
 
-    vga_cursor_hide();
+    tty_cursor_hide(t);
 
     for (int i = 0; i < len; i++)
-        vga_put_at(buf[i], row, start + (size_t)i);
+        tty_put_at(t, buf[i], row, start + (size_t)i);
 
-    for (int i = len; i < (int)(80 - start); i++)
-        vga_put_at(' ', row, start + (size_t)i);
+    for (int i = len; i < (int)(t->cols - start); i++)
+        tty_put_at(t, ' ', row, start + (size_t)i);
 
-    vga_set_cursor(row, start + (size_t)cur);
-    vga_cursor_show();
+    tty_set_cursor(t, row, start + (size_t)cur);
+    tty_cursor_show(t);
 }
 
-/* =========================
-   Новая event-driven линия ввода
-   ========================= */
-
-static void shell_reset_line(void) {
+static void shell_reset_line(void)
+{
     g_len = 0;
     g_cur = 0;
     g_ready = 0;
     g_line[0] = 0;
 }
 
-/* Вызывается из IRQ-клавиатуры (kbd -> shell_input) */
+/* Вызывается из IRQ-клавиатуры (через tty_input_char -> shell_input) */
 void shell_input(char c)
 {
-    if (g_ready) return; // уже есть готовая строка, игнорируем ввод до обработки
+    if (g_ready) return;
 
     // Enter
     if (c == '\n') {
         g_line[g_len] = 0;
-        vga_putc('\n');
+        tty_putc(tty_active(), '\n');
 
         history_add(g_line);
         hist_pos = hist_count;
@@ -118,10 +129,7 @@ void shell_input(char c)
         return;
     }
 
-    // Пока без стрелок: их добавим, когда в kbd будет KEY_LEFT/RIGHT через ext(E0)
-    // Можно зарезервировать “спец-коды” позже.
-
-    // Печатаемые
+    // Printable
     if ((unsigned char)c >= 32 && (unsigned char)c <= 126) {
         if (g_len < (int)sizeof(g_line) - 1) {
             for (int i = g_len; i > g_cur; i--)
@@ -134,21 +142,18 @@ void shell_input(char c)
     }
 }
 
-/* Ждём, пока shell_input соберёт строку */
 static void shell_wait_line(char* out, int out_max)
 {
-    // мигание курсора + ожидание IRQ (timer/keyboard)
     uint32_t last_phase = blink_phase;
 
     while (!g_ready) {
         if (blink_phase != last_phase) {
             last_phase = blink_phase;
-            vga_cursor_blink();
+            tty_cursor_blink(tty_active());
         }
         __asm__ volatile("hlt");
     }
 
-    // копируем строку наружу
     int n = g_len;
     if (n > out_max - 1) n = out_max - 1;
     for (int i = 0; i < n; i++) out[i] = g_line[i];
@@ -157,49 +162,52 @@ static void shell_wait_line(char* out, int out_max)
     shell_reset_line();
 }
 
-void shell_run(void) {
-    char line[128];
+void shell_run(void)
+{
+    char line[LINE_MAX];
 
     shell_reset_line();
 
     while (1) {
-        vga_newline_prompt();
-        vga_print(PROMPT);
-        
+        // новый prompt
+        tty_putc(tty_active(), '\n');
+        tty_prints(PROMPT);
+
         hist_pos = hist_count;
-        // ждём строку, собранную через IRQ
+
         shell_wait_line(line, (int)sizeof(line));
 
         if (streq(line, "help")) {
-            vga_println("Commands: help, clear, about");
+            tty_println("Commands: help, clear, about");
         } else if (streq(line, "clear")) {
-            vga_clear();
+            tty_clear(tty_active());
         } else if (streq(line, "about")) {
-            vga_println("spiderOS kernel");
+            tty_println("spiderOS kernel");
         } else if (line[0]) {
-            vga_print("Unknown: ");
-            vga_println(line);
+            tty_prints("Unknown: ");
+            tty_println(line);
         }
     }
 }
 
 void shell_key(int key)
 {
+    tty_t* t = tty_active();
     size_t row;
-    vga_get_cursor(&row, NULL);
+    tty_get_cursor(t, &row, NULL);
 
     switch (key) {
         case KEY_LEFT:
             if (g_cur > 0) {
                 g_cur--;
-                vga_set_cursor(row, g_start + (size_t)g_cur);
+                tty_set_cursor(t, row, g_start + (size_t)g_cur);
             }
             break;
 
         case KEY_RIGHT:
             if (g_cur < g_len) {
                 g_cur++;
-                vga_set_cursor(row, g_start + (size_t)g_cur);
+                tty_set_cursor(t, row, g_start + (size_t)g_cur);
             }
             break;
 

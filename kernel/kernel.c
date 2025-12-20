@@ -9,14 +9,38 @@
 #include "memory.h"
 #include "pmm.h"
 #include "heap.h"
+#include "tty.h"
 
 #define MULTIBOOT_MAGIC 0x2BADB002
+
+static tty_t tty0;
+
+static void tty0_write_char(char c) { vga_putc(c); }
+static void tty0_put_at(char c, size_t r, size_t col) { vga_put_at(c, r, col); }
+static void tty0_clear(void) { vga_clear(); }
+static void tty0_set_cursor(size_t r, size_t col) { vga_set_cursor(r, col); }
+static void tty0_get_cursor(size_t* r, size_t* col) { vga_get_cursor(r, col); }
+static void tty0_cursor_show(void) { vga_cursor_show(); }
+static void tty0_cursor_hide(void) { vga_cursor_hide(); }
+static void tty0_cursor_blink(void) { vga_cursor_blink(); }
 
 extern uint8_t _kernel_end;
 
 void kmain(uint32_t magic, uint32_t mb_info) {
     (void)mb_info;
+    struct tty_ops ops = {
+        .write_char   = tty0_write_char,
+        .put_at       = tty0_put_at,
+        .clear        = tty0_clear,
+        .set_cursor   = tty0_set_cursor,
+        .get_cursor   = tty0_get_cursor,
+        .cursor_show  = tty0_cursor_show,
+        .cursor_hide  = tty0_cursor_hide,
+        .cursor_blink = tty0_cursor_blink,
+    };
 
+    tty_init(&tty0, ops, 80, 25);
+    tty_set_active(&tty0);
     vga_clear();
 
     // 1) Базовая защита CPU

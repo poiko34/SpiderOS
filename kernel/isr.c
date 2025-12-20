@@ -1,6 +1,7 @@
 #include "isr.h"
-#include "vga.h"
+#include "log.h"
 #include "io.h"
+#include "vga.h"
 
 static isr_t handlers[256] = {0};
 
@@ -28,22 +29,22 @@ static const char* exc_name(uint32_t n) {
 }
 
 static void dump_regs(regs_t* r) {
-    vga_print("EAX="); vga_print_hex32(r->eax);
-    vga_print(" EBX="); vga_print_hex32(r->ebx);
-    vga_print(" ECX="); vga_print_hex32(r->ecx);
-    vga_print(" EDX="); vga_print_hex32(r->edx);
-    vga_println("");
+    klog("EAX="); klog_hex32(r->eax);
+    klog(" EBX="); klog_hex32(r->ebx);
+    klog(" ECX="); klog_hex32(r->ecx);
+    klog(" EDX="); klog_hex32(r->edx);
+    klogln("");
 
-    vga_print("ESI="); vga_print_hex32(r->esi);
-    vga_print(" EDI="); vga_print_hex32(r->edi);
-    vga_print(" EBP="); vga_print_hex32(r->ebp);
-    vga_print(" ESP="); vga_print_hex32(r->esp);
-    vga_println("");
+    klog("ESI="); klog_hex32(r->esi);
+    klog(" EDI="); klog_hex32(r->edi);
+    klog(" EBP="); klog_hex32(r->ebp);
+    klog(" ESP="); klog_hex32(r->esp);
+    klogln("");
 
-    vga_print("EIP="); vga_print_hex32(r->eip);
-    vga_print(" CS="); vga_print_hex32(r->cs);
-    vga_print(" EFL="); vga_print_hex32(r->eflags);
-    vga_println("");
+    klog("EIP="); klog_hex32(r->eip);
+    klog(" CS="); klog_hex32(r->cs);
+    klog(" EFL="); klog_hex32(r->eflags);
+    klogln("");
 }
 
 static void pf_print_flags(uint32_t err) {
@@ -53,13 +54,13 @@ static void pf_print_flags(uint32_t err) {
     // 2 U/S 0=kernel, 1=user
     // 3 RSVD 1=reserved bit violation
     // 4 I/D 1=instruction fetch
-    vga_print(" [");
-    vga_print("P="); vga_print_dec(err & 1);
-    vga_print(" W="); vga_print_dec((err >> 1) & 1);
-    vga_print(" U="); vga_print_dec((err >> 2) & 1);
-    vga_print(" R="); vga_print_dec((err >> 3) & 1);
-    vga_print(" I="); vga_print_dec((err >> 4) & 1);
-    vga_print("] ");
+    klog(" [");
+    klog("P="); klog_dec(err & 1);
+    klog(" W="); klog_dec((err >> 1) & 1);
+    klog(" U="); klog_dec((err >> 2) & 1);
+    klog(" R="); klog_dec((err >> 3) & 1);
+    klog(" I="); klog_dec((err >> 4) & 1);
+    klog("] ");
 }
 
 static void pf_print_human(uint32_t err) {
@@ -70,11 +71,11 @@ static void pf_print_human(uint32_t err) {
     const int instr   = (err >> 4) & 1;
 
     // кратко, но очень информативно
-    vga_print(present ? "PROT " : "NP ");
-    vga_print(write ? "WRITE " : "READ ");
-    vga_print(user ? "USER " : "KERN ");
-    if (rsvd)  vga_print("RSVD ");
-    if (instr) vga_print("IFETCH ");
+    klog(present ? "PROT " : "NP ");
+    klog(write ? "WRITE " : "READ ");
+    klog(user ? "USER " : "KERN ");
+    if (rsvd)  klog("RSVD ");
+    if (instr) klog("IFETCH ");
 }
 
 void isr_handler(regs_t* r) {
@@ -83,28 +84,28 @@ void isr_handler(regs_t* r) {
         return;
     }
 
-    vga_setcolor(15, 4); // белый на красном (если есть)
-    vga_print("EXCEPTION ");
-    vga_print_dec(r->int_no);
-    vga_print(": ");
-    vga_println(exc_name(r->int_no));
-    vga_print("err="); vga_print_hex32(r->err_code);
+    vga_setcolor(15, 4);
+    klog("EXCEPTION ");
+    klog_dec(r->int_no);
+    klog(": ");
+    klogln(exc_name(r->int_no));
+    klog("err="); klog_hex32(r->err_code);
 
     if (r->int_no == 14) {
         uint32_t cr2;
         __asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
 
-        vga_print(" cr2=");
-        vga_print_hex32(cr2);
-        vga_print(" err=");
-        vga_print_hex32(r->err_code);
+        klog(" cr2=");
+        klog_hex32(cr2);
+        klog(" err=");
+        klog_hex32(r->err_code);
 
         pf_print_flags(r->err_code);
         pf_print_human(r->err_code);
 
-        vga_println("");
+        klogln("");
     }
-    vga_println("");
+    klogln("");
 
     dump_regs(r);
 

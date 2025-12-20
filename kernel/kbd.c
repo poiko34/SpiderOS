@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "shell.h"
 #include "isr.h"
+#include "tty.h"
 
 static int shift = 0;
 static int caps  = 0;
@@ -64,10 +65,10 @@ void kbd_handle_scancode(uint8_t sc)
         if (released) return;
 
         switch (sc) {
-            case 0x4B: shell_key(KEY_LEFT);  return; // ←
-            case 0x4D: shell_key(KEY_RIGHT); return; // →
-            case 0x48: shell_key(KEY_UP);    return; // ↑
-            case 0x50: shell_key(KEY_DOWN);  return; // ↓
+            case 0x4B: tty_input_key(KEY_LEFT);  return; // ←
+            case 0x4D: tty_input_key(KEY_RIGHT); return; // →
+            case 0x48: tty_input_key(KEY_UP);    return; // ↑
+            case 0x50: tty_input_key(KEY_DOWN);  return; // ↓
         }
         return;
     }
@@ -87,7 +88,7 @@ void kbd_handle_scancode(uint8_t sc)
         c += 32;
 
     if (c)
-        shell_input(c);
+        tty_input_char(c);
 }
 
 

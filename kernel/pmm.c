@@ -1,5 +1,5 @@
 #include "pmm.h"
-#include "vga.h"
+#include "log.h"
 
 #define PAGE_SIZE 4096
 
@@ -39,9 +39,9 @@ void pmm_init(uint32_t mem_start, uint32_t mem_size)
         used_pages++;
     }
 
-    vga_print("PMM pages total: ");
-    vga_print_dec(total_pages);
-    vga_println("");
+    klog("PMM pages total: ");
+    klog_dec(total_pages);
+    klogln("");
 }
 
 uint32_t pmm_alloc_frame(void)

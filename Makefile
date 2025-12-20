@@ -21,7 +21,9 @@ OBJ := \
   kernel/pmm.o \
   kernel/heap.o \
   kernel/isr_stubs.o \
-  kernel/gdt_flush.o
+  kernel/gdt_flush.o \
+  kernel/tty.o \
+  kernel/log.o
 
 all: os.iso
 

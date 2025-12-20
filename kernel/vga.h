@@ -16,3 +16,6 @@ void vga_put_at(char c, size_t row, size_t col);
 
 void vga_cursor_show(void);
 void vga_cursor_hide(void);
+
+void vga_print_hex32(uint32_t v);
+void vga_print_dec(uint32_t v);

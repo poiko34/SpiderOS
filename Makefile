@@ -14,7 +14,13 @@ OBJ := \
   kernel/shell.o \
   kernel/idt.o \
   kernel/timer.o \
-  kernel/isr.o
+  kernel/isr.o \
+  kernel/gdt.o \
+  kernel/paging.o \
+  kernel/memory.o \
+  kernel/pmm.o \
+  kernel/heap.o \
+  kernel/gdt_flush.o
 
 all: os.iso
 

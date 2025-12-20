@@ -167,3 +167,23 @@ void vga_newline_prompt(void) {
 void vga_put_at(char c, size_t r, size_t c2) {
     VGA[r * 80 + c2] = vga_entry(c, color);
 }
+
+void vga_print_hex32(uint32_t v) {
+    const char* hex = "0123456789ABCDEF";
+    vga_print("0x");
+    for (int i = 7; i >= 0; --i) {
+        uint8_t nib = (v >> (i * 4)) & 0xF;
+        vga_putc(hex[nib]);
+    }
+}
+
+void vga_print_dec(uint32_t v) {
+    char buf[11];
+    int i = 0;
+    if (v == 0) { vga_putc('0'); return; }
+    while (v > 0 && i < 10) {
+        buf[i++] = (char)('0' + (v % 10));
+        v /= 10;
+    }
+    while (i--) vga_putc(buf[i]);
+}

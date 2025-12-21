@@ -60,6 +60,4 @@
 ### Сборка
 ```bash
 make
-
-### Запуск в QEMU
 make run

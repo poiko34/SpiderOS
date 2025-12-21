@@ -24,7 +24,12 @@ OBJ := \
   kernel/gdt_flush.o \
   kernel/tty.o \
   kernel/log.o \
-  kernel/panic.o
+  kernel/panic.o \
+  kernel/syscall.o \
+  kernel/tss.o \
+  kernel/tss_flush.o \
+  kernel/string.o \
+  kernel/enter_user_mode.o
 
 all: os.iso
 

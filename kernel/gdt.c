@@ -1,6 +1,10 @@
 #include "gdt.h"
+#include "tss.h"
+#include "log.h"
 
 extern void gdt_flush(uint32_t);
+
+void gdt_set_gate(int idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 
 struct __attribute__((packed)) gdt_entry {
     uint16_t limit_low;     // bits 0..15 of limit
@@ -16,7 +20,7 @@ struct __attribute__((packed)) gdt_ptr {
     uint32_t base;
 };
 
-static struct gdt_entry gdt[3];
+static struct gdt_entry gdt[6];
 static struct gdt_ptr gp;
 
 static void gdt_set(int i, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
@@ -29,6 +33,10 @@ static void gdt_set(int i, uint32_t base, uint32_t limit, uint8_t access, uint8_
 
     gdt[i].gran |= (gran & 0xF0);
     gdt[i].access = access;
+}
+
+void gdt_set_gate(int idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
+    gdt_set(idx, base, limit, access, gran);
 }
 
 // объявим ASM функцию, которая сделает lgdt + перезагрузит сегменты
@@ -48,6 +56,17 @@ void gdt_init(void) {
 
     // 2: kernel data: access=0x92
     gdt_set(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
+    
+    // 4: user code (ring3)
+    gdt_set(4, 0, 0xFFFFFFFF, 0xFA, 0xCF);
+
+    // 5: user data (ring3)
+    gdt_set(5, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
     gdt_flush((uint32_t)&gp);
+   uint32_t esp;
+   __asm__ volatile ("mov %%esp, %0" : "=r"(esp));
+
+   tss_init(KERNEL_DS, esp);
+   klogln("TSS: OK");
 }

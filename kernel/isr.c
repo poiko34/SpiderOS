@@ -2,6 +2,7 @@
 #include "log.h"
 #include "io.h"
 #include "panic.h"
+#include "syscall.h"
 
 static isr_t handlers[256] = {0};
 
@@ -79,6 +80,16 @@ static void pf_print_human(uint32_t err) {
 }
 
 void isr_handler(regs_t* r) {
+    // Syscall: int 0x80
+    if (r->int_no == 0x80) {
+        r->eax = syscall_dispatch(r);
+        return;
+    }
+
+    if (handlers[r->int_no]) {
+        handlers[r->int_no](r);
+        return;
+    }
     if (handlers[r->int_no]) {
         handlers[r->int_no](r);
         return;

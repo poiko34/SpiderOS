@@ -11,6 +11,9 @@
 #include "heap.h"
 #include "tty.h"
 #include "panic.h"
+#include "log.h"
+#include "syscall.h"
+#include "usermode.h"
 
 #define MULTIBOOT_MAGIC 0x2BADB002
 
@@ -27,8 +30,34 @@ static void tty0_cursor_blink(void) { vga_cursor_blink(); }
 
 extern uint8_t _kernel_end;
 
+static inline void sys_putchar(char c)
+{
+    __asm__ volatile (
+        "int $0x80"
+        :
+        : "a"(SYS_PUTCHAR), "b"((uint32_t)c)
+    );
+}
+
+static inline void sys_puts(const char* s)
+{
+    __asm__ volatile (
+        "int $0x80"
+        :
+        : "a"(SYS_PUTS), "b"((uint32_t)s)
+    );
+}
+
+void user_main(void)
+{
+    __asm__ volatile ("int $0x80" :: "a"(SYS_EXIT));
+    for (;;)
+        ;
+}
+
 void kmain(uint32_t magic, uint32_t mb_info) {
     (void)mb_info;
+    
     struct tty_ops ops = {
         .write_char   = tty0_write_char,
         .put_at       = tty0_put_at,
@@ -43,7 +72,6 @@ void kmain(uint32_t magic, uint32_t mb_info) {
     tty_init(&tty0, ops, 80, 25);
     tty_set_active(&tty0);
     vga_clear();
-
     // 1) Базовая защита CPU
     gdt_init();
 
@@ -102,6 +130,7 @@ void kmain(uint32_t magic, uint32_t mb_info) {
     kbd_install();
 
     __asm__ volatile ("sti");
-
+    vga_println("Entering user mode...");
+    enter_user_mode((uint32_t)user_main, USER_STACK_TOP);
     shell_run();
 }

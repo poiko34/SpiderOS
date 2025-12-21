@@ -23,12 +23,21 @@ static uint16_t get_cs(void) {
     return cs;
 }
 
+static void idt_set_gate_flags(int n, uint32_t handler, uint8_t flags) {
+    idt[n].offset_low  = handler & 0xFFFF;
+    idt[n].selector    = get_cs();
+    idt[n].zero        = 0;
+    idt[n].type_attr   = flags;
+    idt[n].offset_high = (handler >> 16) & 0xFFFF;
+}
+
 static void idt_set_gate(int n, uint32_t handler) {
     idt[n].offset_low  = handler & 0xFFFF;
     idt[n].selector    = get_cs();   // можно оставить так; после gdt_init это обычно 0x08
     idt[n].zero        = 0;
     idt[n].type_attr   = 0x8E;       // present=1, DPL=0, 32-bit interrupt gate
     idt[n].offset_high = (handler >> 16) & 0xFFFF;
+    idt_set_gate_flags(n, handler, 0x8E);
 }
 
 static inline void lidt(void* ptr) {
@@ -92,6 +101,7 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
+extern void isr128();
 
 extern void irq0();
 extern void irq1();
@@ -132,6 +142,8 @@ void idt_init(void) {
     SET_ISR(20); SET_ISR(21); SET_ISR(22); SET_ISR(23);
     SET_ISR(24); SET_ISR(25); SET_ISR(26); SET_ISR(27);
     SET_ISR(28); SET_ISR(29); SET_ISR(30); SET_ISR(31);
+
+    idt_set_gate_flags(0x80, (uint32_t)isr128, 0xEE);
 
     // ===== Hardware IRQ: 32..47 =====
     SET_IRQ(0);  SET_IRQ(1);  SET_IRQ(2);  SET_IRQ(3);

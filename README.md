@@ -47,34 +47,6 @@
 - Kernel logging (INFO / WARN / ERROR)
 - `panic()` с остановкой CPU
 
----
-
-## 📁 Структура проекта
-
-SpiderOS/
-├── kernel/
-│ ├── gdt.* # GDT и protected mode
-│ ├── idt.* # IDT
-│ ├── isr.* # ISR и IRQ
-│ ├── timer.* # PIT таймер
-│ ├── kbd.* # Клавиатура
-│ ├── vga.* # VGA text mode
-│ ├── tty.* # Терминал
-│ ├── memory.* # Memory map
-│ ├── pmm.* # Physical Memory Manager
-│ ├── paging.* # Paging
-│ ├── heap.* # Kernel heap
-│ ├── shell.* # Kernel shell
-│ ├── panic.* # Panic handler
-│ ├── log.* # Logging
-│ ├── multiboot.* # Multiboot header
-│ └── kernel.c # kernel_main
-├── linker.ld # Linker script
-├── grub.cfg # GRUB config
-├── Makefile # Build system
-└── README.md
----
-
 ## 🛠 Сборка и запуск
 
 ### Зависимости

@@ -14,6 +14,7 @@
 #include "log.h"
 #include "syscall.h"
 #include "usermode.h"
+#include "task.h"
 
 #define MULTIBOOT_MAGIC 0x2BADB002
 
@@ -131,6 +132,11 @@ void kmain(uint32_t magic, uint32_t mb_info) {
 
     __asm__ volatile ("sti");
     vga_println("Entering user mode...");
+    task_init_system();
+    task_t* u = task_create_user((uint32_t)user_main, USER_STACK_TOP);
+
+    task_switch(u);
+    enter_user_mode(u->entry, u->user_stack_top);
     enter_user_mode((uint32_t)user_main, USER_STACK_TOP);
     shell_run();
 }

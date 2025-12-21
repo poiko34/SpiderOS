@@ -1,5 +1,6 @@
 #include "syscall.h"
 #include "tty.h"
+#include "task.h"
 #include "log.h"
 
 typedef uint32_t (*sysfn_t)(
@@ -39,15 +40,22 @@ static uint32_t sys_puts(uint32_t ptr,
     return 0;
 }
 
-static uint32_t sys_exit(uint32_t _0,
-                         uint32_t _1,
-                         uint32_t _2,
-                         uint32_t _3,
-                         uint32_t _4)
+static uint32_t sys_exit(uint32_t code,
+                         uint32_t _1, uint32_t _2, uint32_t _3, uint32_t _4)
 {
-    (void)_0; (void)_1; (void)_2; (void)_3; (void)_4;
+    (void)code;
+    (void)_1; (void)_2; (void)_3; (void)_4;
 
-    klog("User process exited\n");
+    task_t* cur = task_current();
+
+    klog("SYS_EXIT pid=");
+    klog_dec(cur->pid);
+    klog("\n");
+
+    task_mark_zombie(cur);
+
+    task_switch(task_kernel());
+
     return 0;
 }
 

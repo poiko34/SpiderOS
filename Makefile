@@ -29,7 +29,8 @@ OBJ := \
   kernel/tss.o \
   kernel/tss_flush.o \
   kernel/string.o \
-  kernel/enter_user_mode.o
+  kernel/enter_user_mode.o \
+  kernel/task.o
 
 all: os.iso
 
